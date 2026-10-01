@@ -1,44 +1,75 @@
+
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import tempfile
 
-st.set_page_config(page_title="Analisador IA - Gemini", page_icon="🤖")
+st.set_page_config(page_title="Assistente IA Avançado - Gemini", page_icon="🤖", layout="centered")
 
-st.title("🤖 Analisador de Imagens e Vídeos com Gemini")
-st.write("Carrega uma imagem ou vídeo e faz perguntas à inteligência artificial.")
+st.title("🤖 Assistente Multimodal Avançado com Gemini")
+st.write("Carregue uma imagem ou vídeo, faça perguntas e mantenha uma conversa fluida com a inteligência artificial.")
 
-api_key = st.text_input("Insere a tua Google Gemini API Key", type="password")
+# Configuração na barra lateral (Sidebar)
+st.sidebar.header("⚙️ Configurações")
+api_key = st.sidebar.text_input("Insira sua chave API do Google Gemini", type="password")
+
+modelo_escolhido = st.sidebar.selectbox(
+    "Escolha o modelo de IA", 
+    ["gemini-1.5-flash", "gemini-1.5-pro"]
+)
 
 if api_key:
     genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(modelo_escolhido)
     
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Secção de upload de ficheiros na barra lateral
+    st.sidebar.divider()
+    st.sidebar.subheader("📎 Ficheiro Multimodal")
+    arquivo_enviado = st.sidebar.file_uploader("Carregar imagem ou vídeo (opcional)", type=["jpg", "jpeg", "png", "mp4"])
     
-    uploaded_file = st.file_uploader("Escolhe uma imagem ou vídeo...", type=["jpg", "jpeg", "png", "mp4", "mov"])
-    
-    if uploaded_file is not None:
-        if uploaded_file.type.startswith("image"):
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Imagem carregada", use_column_width=True)
-            prompt = st.text_input("O que queres perguntar sobre esta imagem?")
-            if st.button("Analisar Imagem") and prompt:
-                with st.spinner("A analisar a imagem..."):
-                    response = model.generate_content([image, prompt])
-                    st.success("Resposta:")
-                    st.write(response.text)
-                    
-        elif uploaded_file.type.startswith("video"):
-            st.video(uploaded_file)
-            prompt = st.text_input("O que queres perguntar sobre este vídeo?")
-            if st.button("Analisar Vídeo") and prompt:
-                with st.spinner("A processar e analisar o vídeo..."):
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
-                        tmp.write(uploaded_file.read())
-                        video_path = tmp.name
-                    video_file = genai.upload_file(path=video_path)
-                    response = model.generate_content([video_file, prompt])
-                    st.success("Resposta:")
-                    st.write(response.text)
+    # Gestão do histórico de mensagens no estado da sessão
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Exibir o histórico de mensagens anterior no chat
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Processar ficheiro carregado para exibir pré-visualização
+    midia_para_ia = None
+    if arquivo_enviado is not None:
+        if arquivo_enviado.type.startswith("image"):
+            imagem = Image.open(arquivo_enviado)
+            st.sidebar.image(imagem, caption="Imagem carregada", use_column_width=True)
+            midia_para_ia = imagem
+        elif arquivo_enviado.type.startswith("video"):
+            st.sidebar.video(arquivo_enviado)
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_file:
+                temp_file.write(arquivo_enviado.read())
+                caminho_video = temp_file.name
+            with st.spinner("A processar vídeo para o Gemini..."):
+                midia_para_ia = genai.upload_file(caminho_video)
+
+    # Caixa de entrada de texto do chat na parte inferior
+    if prompt := st.chat_input("Escreva a sua mensagem ou pergunta..."):
+        # Adicionar mensagem do utilizador ao histórico
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+            
+        # Gerar resposta da IA
+        with st.chat_message("assistant"):
+            with st.spinner("A pensar..."):
+                conteudo_pedido = []
+                if midia_para_ia is not None:
+                    conteudo_pedido.append(midia_para_ia)
+                conteudo_pedido.append(prompt)
+                
+                resposta = model.generate_content(conteudo_pedido)
+                st.markdown(resposta.text)
+                
+                # Adicionar resposta ao histórico
+                st.session_state.messages.append({"role": "assistant", "content": resposta.text})
 else:
-    st.warning("⚠️ Por favor, insere a tua chave API do Gemini para começar.")
+    st.warning("⚠️ Por favor, insira a sua chave API do Google Gemini na barra lateral para começar a utilizar a aplicação.")
