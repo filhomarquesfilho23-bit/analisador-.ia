@@ -1,4 +1,4 @@
-
+cat << 'EOF' > streamlit_app.py
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
@@ -10,7 +10,7 @@ st.title("🤖 Assistente Multimodal Avançado com Gemini")
 st.write("Carregue uma imagem ou vídeo, faça perguntas e mantenha uma conversa fluida com a inteligência artificial.")
 
 # Configuração na barra lateral (Sidebar)
-st.sidebar.header("⚙️ Configurações")
+st.sidebar.header("⚙ Configurações")
 api_key = st.sidebar.text_input("Insira sua chave API do Google Gemini", type="password")
 
 modelo_escolhido = st.sidebar.selectbox(
@@ -73,3 +73,4 @@ if api_key:
                 st.session_state.messages.append({"role": "assistant", "content": resposta.text})
 else:
     st.warning("⚠️ Por favor, insira a sua chave API do Google Gemini na barra lateral para começar a utilizar a aplicação.")
+EOF
