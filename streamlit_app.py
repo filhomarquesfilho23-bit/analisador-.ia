@@ -7,7 +7,7 @@ import tempfile
 st.set_page_config(page_title="Assistente IA Avançado - Gemini", page_icon="🤖")
 
 st.title("🤖 Assistente Multimodal Avançado com Gemini")
-st.write("Carregue uma imagem ou vídeo, faça perguntas e mantenha o chat interativo.")
+st.write("Carregue ficheiros (imagens, vídeos, PDFs, TXT, CSV), faça perguntas e gerencie o seu chat.")
 
 # Configuração na barra lateral (Sidebar)
 st.sidebar.header("⚙️ Configurações")
@@ -18,6 +18,13 @@ modelo_escolhido = st.sidebar.selectbox(
     ["gemini-3.8-flash", "gemini-3.1-pro-preview"]
 )
 
+# 1. Controlo de Criatividade (Temperatura)
+temperatura = st.sidebar.slider(
+    "🌡️ Criatividade (Temperatura)", 
+    0.0, 1.0, 0.7, 
+    help="Valores baixos = respostas diretas e precisas. Valores altos = respostas mais criativas."
+)
+
 if api_key:
     genai.configure(api_key=api_key)
     try:
@@ -25,14 +32,36 @@ if api_key:
     except Exception as e:
         st.error(f"Erro ao inicializar o modelo: {e}")
 
-# Secção de upload de ficheiros na barra lateral
+# Secção de upload de ficheiros na barra lateral (4. Suporte a Documentos, Imagens, Vídeos)
 st.sidebar.divider()
 st.sidebar.subheader("📎 Ficheiro Multimodal")
-arquivo_enviado = st.sidebar.file_uploader("Carregar imagem ou vídeo", type=["png", "jpg", "jpeg", "mp4"])
+arquivo_enviado = st.sidebar.file_uploader(
+    "Carregar ficheiro (Imagem, Vídeo, PDF, TXT, CSV)", 
+    type=["png", "jpg", "jpeg", "mp4", "pdf", "txt", "csv"]
+)
 
 # Gestão do histórico de mensagens no estado da sessão
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# 2. Botão para Limpar o Chat
+if st.sidebar.button("🗑️ Limpar Conversa"):
+    st.session_state.messages = []
+    st.rerun()
+
+# 3. Exportar o Histórico da Conversa
+if st.session_state.messages:
+    chat_texto = ""
+    for m in st.session_state.messages:
+        chat_texto += f"{m['role'].upper()}: {m['content']}\n\n"
+    st.sidebar.download_button(
+        label="📥 Baixar Conversa (.txt)",
+        data=chat_texto,
+        file_name="historico_conversa.txt",
+        mime="text/plain"
+    )
+
+st.sidebar.divider()
 
 # Exibir o histórico de mensagens anterior no chat
 for message in st.session_state.messages:
@@ -55,14 +84,27 @@ if prompt := st.chat_input("Escreva sua mensagem ou pergunta..."):
                 try:
                     conteudo_chat = []
                     
-                    # Se houver imagem ou ficheiro enviado
+                    # Processamento inteligente de ficheiros enviados
                     if arquivo_enviado is not None:
-                        imagem = Image.open(arquivo_enviado)
-                        conteudo_chat.append(imagem)
+                        ext = arquivo_enviado.name.split('.')[-1].lower()
+                        if ext in ["png", "jpg", "jpeg"]:
+                            imagem = Image.open(arquivo_enviado)
+                            conteudo_chat.append(imagem)
+                        elif ext in ["txt", "csv"]:
+                            texto_doc = arquivo_enviado.getvalue().decode("utf-8")
+                            conteudo_chat.append(f"Conteúdo do documento ({arquivo_enviado.name}):\n{texto_doc}")
+                        else:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+                                tmp.write(arquivo_enviado.getvalue())
+                                tmp_path = tmp.name
+                            file_ref = genai.upload_file(tmp_path)
+                            conteudo_chat.append(file_ref)
                     
                     conteudo_chat.append(prompt)
                     
-                    resposta = model.generate_content(conteudo_chat)
+                    # Gerar resposta com a temperatura configurada
+                    generation_config = {"temperature": temperatura}
+                    resposta = model.generate_content(conteudo_chat, generation_config=generation_config)
                     resposta_texto = resposta.text
                     
                     st.markdown(resposta_texto)
