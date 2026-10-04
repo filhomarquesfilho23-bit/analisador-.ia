@@ -16,9 +16,11 @@ with st.sidebar:
     st.header("⚙️ Configurações da Aplicação")
     api_key = st.text_input("Insira a sua chave API do Google Gemini", type="password")
     
-    modelo_escolhido = st.selectbox(
-        "Escolha o modelo de IA:",
-        ["gemini-2.5-flash", "gemini-2.5-pro"]
+modelo_escolhido = st.selectbox(
+    "Escolha o modelo de IA:",
+    ["gemini-1.5-flash", "gemini-1.5-pro"]
+)
+
     )
     
     st.markdown("---")
