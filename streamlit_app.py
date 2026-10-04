@@ -1,8 +1,7 @@
-
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
-import tempfile
+import pandas as pd
 
 st.set_page_config(
     page_title="ObraSmart - Assistente de Engenharia Civil",
@@ -10,8 +9,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🏗️ ObraSmart - Inteligência Artificial para Engenharia Civil")
-st.markdown("Plataforma comercial avançada para engenharia estrutural, orçamentação e visualização multimédia.")
+st.title("🏗️ ObraSmart - Inteligência Artificial e Gestão para Engenharia Civil")
+st.markdown("Plataforma comercial avançada para engenharia estrutural, orçamentação e análise de dados.")
 
 with st.sidebar:
     st.header("⚙️ Configurações da Aplicação")
@@ -26,7 +25,12 @@ with st.sidebar:
     st.markdown("### Módulos do ObraSmart")
     modulo = st.radio(
         "Selecione a ferramenta:",
-        ["Chat Técnico & Normas (Multimodal)", "Gerador de Renders (Imagens)", "Simulador de Canteiro (Vídeos)"]
+        [
+            "Chat Técnico & Normas (Multimodal)", 
+            "Dashboard de Custos & Obras", 
+            "Gerador de Renders (Imagens)", 
+            "Simulador de Canteiro (Vídeos)"
+        ]
     )
     
     st.markdown("---")
@@ -88,6 +92,41 @@ if modulo == "Chat Técnico & Normas (Multimodal)":
                     
                 except Exception as e:
                     st.error(f"Ocorreu um erro ao comunicar com a API: {e}")
+
+elif modulo == "Dashboard de Custos & Obras":
+    st.subheader("📊 Dashboard de Controlo de Custos e Orçamentos")
+    st.markdown("Monitorize os desvios financeiros, o orçamento previsto e o custo real das várias fases da construção.")
+    
+    dados_obra = {
+        "Fase da Obra": ["Fundações", "Estrutura", "Alvenaria", "Instalações", "Acabamentos"],
+        "Previsto_EUR": [50000, 120000, 35000, 45000, 60000],
+        "Real_EUR": [52000, 118000, 39500, 43000, 62000]
+    }
+    
+    df = pd.DataFrame(dados_obra)
+    df["Desvio_EUR"] = df["Real_EUR"] - df["Previsto_EUR"]
+    
+    total_previsto = df["Previsto_EUR"].sum()
+    total_real = df["Real_EUR"].sum()
+    desvio_total = total_real - total_previsto
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Orçamento Total", f"€ {total_previsto:,.2f}")
+    col2.metric("Custo Total Real", f"€ {total_real:,.2f}", delta=f"€ {desvio_total:,.2f}", delta_color="inverse")
+    
+    if desvio_total > 0:
+        col3.metric("Estado Global", "⚠️ Estouro de Orçamento")
+    else:
+        col3.metric("Estado Global", "✅ Orçamento Controlado")
+        
+    st.markdown("---")
+    st.markdown("### 📈 Comparativo Gráfico: Orçamento vs Custo Real")
+    
+    df_chart = df.set_index("Fase da Obra")[["Previsto_EUR", "Real_EUR"]]
+    st.bar_chart(df_chart)
+    
+    st.markdown("### 📋 Tabela Analítica de Fases")
+    st.dataframe(df, use_container_width=True)
 
 elif modulo == "Gerador de Renders (Imagens)":
     st.subheader("🎨 Geração de Renders Fotorrealistas para Projetos")
