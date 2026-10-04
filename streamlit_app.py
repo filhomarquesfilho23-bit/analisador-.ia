@@ -16,11 +16,9 @@ with st.sidebar:
     st.header("⚙️ Configurações da Aplicação")
     api_key = st.text_input("Insira a sua chave API do Google Gemini", type="password")
     
-modelo_escolhido = st.selectbox(
-    "Escolha o modelo de IA:",
-    ["gemini-1.5-flash", "gemini-1.5-pro"]
-)
-
+    modelo_escolhido = st.selectbox(
+        "Escolha o modelo de IA:",
+        ["gemini-1.5-flash", "gemini-1.5-pro"]
     )
     
     st.markdown("---")
@@ -156,7 +154,7 @@ elif modulo == "Simulador de Canteiro (Vídeos)":
         placeholder="Ex: Timelapse animado da betonagem de uma laje de fundação num grande canteiro de obras."
     )
     
-    if st.button("Gerar Simulação em Vídeo", type="primary"):
+    if st.button("Simulação em Vídeo", type="primary"):
         if not prompt_video:
             st.error("Introduza uma descrição para a simulação.")
         else:
