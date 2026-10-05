@@ -3,6 +3,7 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 import pandas as pd
+import urllib.parse
 
 st.set_page_config(
     page_title="ObraSmart - Assistente de Engenharia Civil",
@@ -125,7 +126,6 @@ elif modulo == "Dashboard de Custos & Obras":
         
     st.markdown("---")
     
-    # Botão de Exportação de Dados em CSV
     csv_dados = df.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Descarregar Relatório de Orçamento (CSV)",
@@ -156,7 +156,7 @@ elif modulo == "Calculadoras Rápidas de Canteiro":
             espessura = st.number_input("Espessura / Altura (m)", min_value=0.01, value=0.20)
             
         volume = comprimento * largura * espessura
-        perda = volume * 1.05 # 5% de margem de perda por desperdício/transbordo
+        perda = volume * 1.05
         
         st.success(f"**Volume Geométrico Líquido:** {volume:.2f} m³")
         st.info(f"**Volume Recomendado com 5% de Margem (Perdas):** {perda:.2f} m³")
@@ -192,9 +192,12 @@ elif modulo == "Gerador de Renders (Imagens)":
         if not prompt_imagem:
             st.error("Introduza uma descrição para o render.")
         else:
-            with st.spinner("A gerar imagem com IA..."):
+            with st.spinner("A gerar render fotorrealista com IA..."):
+                prompt_encoded = urllib.parse.quote(prompt_imagem)
+                url_render = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=1024&height=768&nologo=true"
+                
                 st.success("Render gerado com sucesso!")
-                st.info(f"Parâmetros aplicados: {prompt_imagem}")
+                st.image(url_render, caption=f"Render do Projeto: {prompt_imagem}", use_container_width=True)
 
 elif modulo == "Simulador de Canteiro (Vídeos)":
     st.subheader("🎥 Simulações Dinâmicas e Vídeos de Canteiro")
