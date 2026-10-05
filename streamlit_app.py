@@ -1,3 +1,4 @@
+
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
@@ -18,7 +19,7 @@ with st.sidebar:
     
     modelo_escolhido = st.selectbox(
         "Escolha o modelo de IA:",
-        ["gemini-1.5-flash", "gemini-1.5-pro"]
+        ["gemini-3.5-flash-lite", "gemini-1.5-pro"]
     )
     
     st.markdown("---")
