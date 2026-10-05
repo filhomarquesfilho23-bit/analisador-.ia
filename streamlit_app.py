@@ -29,6 +29,7 @@ with st.sidebar:
         [
             "Chat Técnico & Normas (Multimodal)", 
             "Dashboard de Custos & Obras", 
+            "Calculadoras Rápidas de Canteiro",
             "Gerador de Renders (Imagens)", 
             "Simulador de Canteiro (Vídeos)"
         ]
@@ -95,16 +96,18 @@ if modulo == "Chat Técnico & Normas (Multimodal)":
                     st.error(f"Ocorreu um erro ao comunicar com a API: {e}")
 
 elif modulo == "Dashboard de Custos & Obras":
-    st.subheader("📊 Dashboard de Controlo de Custos e Orçamentos")
-    st.markdown("Monitorize os desvios financeiros, o orçamento previsto e o custo real das várias fases da construção.")
+    st.subheader("📊 Dashboard Interativo de Controlo de Custos")
+    st.markdown("Edita diretamente os valores na tabela abaixo para simular orçamentos e custos reais em tempo real.")
     
     dados_obra = {
         "Fase da Obra": ["Fundações", "Estrutura", "Alvenaria", "Instalações", "Acabamentos"],
-        "Previsto_EUR": [50000, 120000, 35000, 45000, 60000],
-        "Real_EUR": [52000, 118000, 39500, 43000, 62000]
+        "Previsto_EUR": [50000.0, 120000.0, 35000.0, 45000.0, 60000.0],
+        "Real_EUR": [52000.0, 118000.0, 39500.0, 43000.0, 62000.0]
     }
     
-    df = pd.DataFrame(dados_obra)
+    df_inicial = pd.DataFrame(dados_obra)
+    df = st.data_editor(df_inicial, use_container_width=True, num_rows="dynamic")
+    
     df["Desvio_EUR"] = df["Real_EUR"] - df["Previsto_EUR"]
     
     total_previsto = df["Previsto_EUR"].sum()
@@ -121,13 +124,60 @@ elif modulo == "Dashboard de Custos & Obras":
         col3.metric("Estado Global", "✅ Orçamento Controlado")
         
     st.markdown("---")
-    st.markdown("### 📈 Comparativo Gráfico: Orçamento vs Custo Real")
     
+    # Botão de Exportação de Dados em CSV
+    csv_dados = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Descarregar Relatório de Orçamento (CSV)",
+        data=csv_dados,
+        file_name="orcamento_obrasmart.csv",
+        mime="text/csv",
+        type="primary"
+    )
+    
+    st.markdown("### 📈 Comparativo Gráfico Dinâmico")
     df_chart = df.set_index("Fase da Obra")[["Previsto_EUR", "Real_EUR"]]
     st.bar_chart(df_chart)
+
+elif modulo == "Calculadoras Rápidas de Canteiro":
+    st.subheader("📐 Calculadoras Rápidas para Engenharia em Canteiro")
+    st.markdown("Ferramentas de cálculo expedito para apoio direto na execução de obra.")
     
-    st.markdown("### 📋 Tabela Analítica de Fases")
-    st.dataframe(df, use_container_width=True)
+    tab1, tab2 = st.tabs(["Volume de Betão (Lajes/Fundações)", "Estimativa de Aço (Armadura)"])
+    
+    with tab1:
+        st.markdown("### 🏗️ Cálculo de Volume de Betão")
+        col_b1, col_b2, col_b3 = st.columns(3)
+        with col_b1:
+            comprimento = st.number_input("Comprimento (m)", min_value=0.1, value=10.0)
+        with col_b2:
+            largura = st.number_input("Largura (m)", min_value=0.1, value=5.0)
+        with col_b3:
+            espessura = st.number_input("Espessura / Altura (m)", min_value=0.01, value=0.20)
+            
+        volume = comprimento * largura * espessura
+        perda = volume * 1.05 # 5% de margem de perda por desperdício/transbordo
+        
+        st.success(f"**Volume Geométrico Líquido:** {volume:.2f} m³")
+        st.info(f"**Volume Recomendado com 5% de Margem (Perdas):** {perda:.2f} m³")
+        
+    with tab2:
+        st.markdown("### 🔗 Estimativa de Consumo de Aço")
+        vol_betao = st.number_input("Volume total de betão estrutural (m³)", min_value=1.0, value=25.0)
+        tipo_estrutura = st.selectbox(
+            "Tipo de Elemento / Estrutura:",
+            ["Fundação / Sapatas (~80 kg/m³)", "Pilares e Vigas Corrente (~110 kg/m³)", "Laje Maciça (~90 kg/m³)"]
+        )
+        
+        if "Fundação" in tipo_estrutura:
+            taxa = 80
+        elif "Pilares" in tipo_estrutura:
+            taxa = 110
+        else:
+            taxa = 90
+            
+        aco_total = vol_betao * taxa
+        st.success(f"**Consumo Estimado de Aço (CA-50 / CA-60):** {aco_total:,.1f} kg (~{aco_total/1000:.2f} toneladas)")
 
 elif modulo == "Gerador de Renders (Imagens)":
     st.subheader("🎨 Geração de Renders Fotorrealistas para Projetos")
